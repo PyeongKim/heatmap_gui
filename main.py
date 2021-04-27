@@ -10,6 +10,7 @@ import seaborn as sns
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import QIcon, QPixmap
+import os
 style.use('ggplot')
 
 
@@ -112,6 +113,13 @@ class PlotWorker(QThread, QWidget):
             self.stop.emit()
 
 
+def resource_path(relative_path):
+     try:
+         base_path = sys._MEIPASS
+     except Exception:
+         base_path = os.path.abspath('.')
+     return os.path.join(base_path, relative_path)
+
 class MainWidget(QWidget):
 
     def __init__(self):
@@ -120,10 +128,11 @@ class MainWidget(QWidget):
 
     def initUI(self):
 
-        self.setGeometry(50, 50, 400, 400)
+        self.setGeometry(50, 50, 300, 300)
         self.center()
         self.setWindowTitle('Heatmap Generator')
-
+        icon_path = resource_path('./data/jlk_icon.png')
+        self.setWindowIcon(QIcon(icon_path))
         #Grid Layout
         grid = QGridLayout()
         self.setLayout(grid)
@@ -144,15 +153,15 @@ class MainWidget(QWidget):
         self.btn1.resize(self.btn1.sizeHint())
         self.btn1.clicked.connect(self.openfile)
 
-        grid.addWidget(self.btn1, 0, 1)
+        grid.addWidget(self.btn1, 0, 2)
 
         self.lineEdit = QLineEdit(self)
         self.lineEdit.setEnabled(False)
-        grid.addWidget(self.lineEdit, 0, 0)
+        grid.addWidget(self.lineEdit, 0, 0, 1, 2)
 
         # select gene column
         self.comboBox = QComboBox(self)
-        grid.addWidget(self.comboBox, 1, 1)
+        grid.addWidget(self.comboBox, 1, 1, 1, 2)
         label1 = QLabel('Select Gene Column:', self)
         grid.addWidget(label1, 1, 0)
 
@@ -161,51 +170,59 @@ class MainWidget(QWidget):
         self.comboBox2 = QComboBox(self)
         self.comboBox2.addItems(self.cmap_list)
         self.comboBox2.currentIndexChanged.connect(self.changeimage)
-        grid.addWidget(self.comboBox2, 2, 1)
+        grid.addWidget(self.comboBox2, 2, 1, 1, 2)
         label2 = QLabel('Select Colour Map:', self)
         grid.addWidget(label2, 2, 0)
 
         self.cmap_label = QLabel(self)
-        pixmap = QPixmap('./data/{}.png'.format(self.comboBox2.currentText()))
+        current_map = resource_path('./data/{}.png'.format(self.comboBox2.currentText()))
+        pixmap = QPixmap(current_map)
         pixmap = pixmap.scaled(20, 100, Qt.KeepAspectRatio, Qt.FastTransformation)
         self.cmap_label.setPixmap(pixmap)
         #
         self.cmap_label.setScaledContents(True)
         self.cmap_label.setFixedHeight(20)
-        grid.addWidget(self.cmap_label, 3, 1)
+        grid.addWidget(self.cmap_label, 3, 1, 1, 2)
+
+
         # y_cluster
-        self.column_cluster = QComboBox(self)
-        self.column_cluster.addItems(['True', 'False'])
+        self.column_cluster = QCheckBox('column', self)
+        self.column_cluster.toggle()
         grid.addWidget(self.column_cluster, 4, 1)
-        label6 = QLabel('Show column cluster:', self)
+        self.row_cluster = QCheckBox('row', self)
+        self.row_cluster.toggle()
+        grid.addWidget(self.row_cluster, 4, 2)
+        label6 = QLabel('Do Clustering:', self)
         grid.addWidget(label6, 4, 0)
 
         # x_cluster
-        self.row_cluster = QComboBox(self)
-        self.row_cluster.addItems(['True', 'False'])
-        grid.addWidget(self.row_cluster, 5, 1)
-        label7 = QLabel('Show row cluster:', self)
+        self.column_show = QCheckBox('column', self)
+        self.column_show.toggle()
+        grid.addWidget(self.column_show, 5, 1)
+        self.row_show = QCheckBox('row', self)
+        self.row_show.toggle()
+        grid.addWidget(self.row_show, 5, 2)
+        label7 = QLabel('Show Dendrogram:', self)
         grid.addWidget(label7, 5, 0)
-
         # x size
         self.fig_size_x = QLineEdit(self)
         self.fig_size_x.setText('10')
-        grid.addWidget(self.fig_size_x, 6, 1)
-        label3 = QLabel('Select figure width:', self)
+        grid.addWidget(self.fig_size_x, 6, 1, 1, 2)
+        label3 = QLabel('Select Figure Width:', self)
         grid.addWidget(label3, 6, 0)
 
         # y size
         self.fig_size_y = QLineEdit(self)
         self.fig_size_y.setText('10')
-        grid.addWidget(self.fig_size_y, 7, 1)
-        label4 = QLabel('Select figure hieght:', self)
+        grid.addWidget(self.fig_size_y, 7, 1, 1, 2)
+        label4 = QLabel('Select Figure Hieght:', self)
         grid.addWidget(label4, 7, 0)
 
         # font size
         self.font_scale = QLineEdit(self)
         self.font_scale.setText('1.0')
-        grid.addWidget(self.font_scale, 8, 1)
-        label5 = QLabel('Select font scale:', self)
+        grid.addWidget(self.font_scale, 8, 1, 1, 2)
+        label5 = QLabel('Select Font Scale:', self)
         grid.addWidget(label5, 8, 0)
 
 
@@ -213,7 +230,7 @@ class MainWidget(QWidget):
         # dpi
         self.dpi = QLineEdit(self)
         self.dpi.setText('600')
-        grid.addWidget(self.dpi, 9, 1)
+        grid.addWidget(self.dpi, 9, 1, 1, 2)
         label8 = QLabel('Select dpi:', self)
         grid.addWidget(label8, 9, 0)
 
@@ -221,7 +238,7 @@ class MainWidget(QWidget):
         self.btn2 = QPushButton('Generate Plot', self)
         self.btn2.resize(self.btn2.sizeHint())
         self.btn2.clicked.connect(self.plot)
-        grid.addWidget(self.btn2, 10, 0, 1, 2)
+        grid.addWidget(self.btn2, 10, 0, 1, 3)
 
 
         self.setLayout(grid)
@@ -229,7 +246,8 @@ class MainWidget(QWidget):
         self.show()
 
     def changeimage(self):
-        pixmap = QPixmap('./data/{}.png'.format(self.comboBox2.currentText()))
+        current_map = resource_path('./data/{}.png'.format(self.comboBox2.currentText()))
+        pixmap = QPixmap(current_map)
         pixmap = pixmap.scaled(20, 100, Qt.KeepAspectRatio, Qt.FastTransformation)
         self.cmap_label.setPixmap(pixmap)
 
@@ -274,19 +292,20 @@ class MainWidget(QWidget):
                 heatmap_HEM_MAT=pd.pivot_table(self.df, index=gene_colomn, values=list(self.df).remove(gene_colomn))
 
                 sns.set(font_scale=float(self.font_scale.text())) #font size
-                col_cluster = 0 if str(self.column_cluster.currentText()) == 'False' else 1
-                row_cluster = 0 if str(self.row_cluster.currentText()) == 'False' else 1
-                sns.clustermap(heatmap_HEM_MAT,
-                               cmap=str(self.comboBox2.currentText()),
-                               yticklabels=True,
-                               z_score=0,
-                               cbar_kws={},
-                               col_cluster=bool(col_cluster),
-                               row_cluster=bool(row_cluster),
-                               figsize=(int(self.fig_size_x.text()), int(self.fig_size_y.text()))) #making heatmap
+                #col_cluster = 0 if str(self.column_cluster.currentText()) == 'False' else 1
+                #row_cluster = 0 if str(self.row_cluster.currentText()) == 'False' else 1
+                g = sns.clustermap(heatmap_HEM_MAT,
+                                   cmap=str(self.comboBox2.currentText()),
+                                   yticklabels=True,
+                                   z_score=0,
+                                   cbar_kws={},
+                                   col_cluster=self.column_cluster.isChecked(),
+                                   row_cluster=self.row_cluster.isChecked(),
+                                   figsize=(int(self.fig_size_x.text()), int(self.fig_size_y.text()))) #making heatmap
 
-
-                plt.savefig(name, dpi=int(self.dpi.text()))
+                g.ax_row_dendrogram.set_visible(self.row_show.isChecked())
+                g.ax_col_dendrogram.set_visible(self.column_show.isChecked())
+                g.savefig(name, dpi=int(self.dpi.text()))
                 QMessageBox.about(self, "Completed", "Heatmap saved to {}".format(name))
             else:
                 QMessageBox.warning(self, 'Warning','You did not designated file name to save! Please designate file name (either .pdf or .png)')
